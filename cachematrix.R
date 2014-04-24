@@ -15,15 +15,48 @@
 
 makeCacheMatrix <- function(x = matrix(), ... ) {
 
+      if (TestMatrix(x)) {
+            message("Matrix set successfully")                     
+      } else {
+            x <- NULL
+            message("Error - object must be a 2 Dim Matrix with number rows = number columns")
+      }
+      
       InvMat <- NULL
       setMatrix <- function(y) {
-            x <<- y
-            InvMat <<- NULL
+            
+            ## Error handle here to check if x is matrix and square?
+            if (TestMatrix(y)) {
+                  x <<- y
+                  InvMat <<- NULL ##reset inverse matrix
+                  message("Matrix set successfully")
+            } 
+            else {
+                  message("Error - object must be a 2 Dim Matrix with number rows = number columns")
+                  message("Original Matrix NOT reset")
             }
+      }      
       getMatrix <- function() x
-      getInverse <- function() InvMat
-      setInverse <- function(mm) InvMat <<- mm
+      getInverse <- function() {
+            if (is.null(InvMat)){
+                  message("Inverse not stored yet, call cacheSolve function to get Inverse matrix")
       
+            
+            }
+            InvMat
+            
+      }
+      setInverse <- function(mm) {
+            ##check matrix passed is inverse of x
+            if (TestInverse(mm,x))  {
+                  InvMat <<- mm 
+                  message ("Inverse stored on object")
+            } else {
+                  message("Matrix passed is not valid to be set as Inverse")
+            }
+            
+            
+      }
       list(getMatrix=getMatrix,setMatrix=setMatrix,getInverse=getInverse,setInverse=setInverse)
 }
 
@@ -37,6 +70,8 @@ makeCacheMatrix <- function(x = matrix(), ... ) {
 ## If it hasnt already been calculated then it calculates the inverse using "solve" 
 ## and then stores it back into object x using the function setInverse
 
+##should function be passed object with functions or just matrix??
+
 cacheSolve <- function(x, ...) {
         ## Return a matrix that is the inverse of 'x'
       MatTemp <- x$getInverse()
@@ -45,22 +80,78 @@ cacheSolve <- function(x, ...) {
             message ("getting cached data")
                         
       } else {
-            message ("calculating Inverse Matrix and storing")
+            message ("calculating Inverse Matrix and storing ...")
             MatTemp <- solve(x$getMatrix())
             x$setInverse(MatTemp)
+            
       }
       MatTemp
 }
 
 ##  To be used to validate function makeCacheMatrix and cacheSolve
-##  function to test solution works by returning the product of mainmatrix and stored inverse
-##  This should be an identity matrix (so that AB=BA=I where A is a matrix and B its inverse)
+##  function to test solution works by use of test AB=BA=I 
+##  where  A is a matrix and B its inverse and I is an identity matrix of same size 
 ##  round to integer for ease of checking
 
-TestInverse <- function(x) {
+#  creates logical matrix I = (AB == BA),
+## check sum(I)=length(I), (in R TRUE =1 and FALSE=0)
+ 
+TestInverse <- function(MatA,MatB) {
 
-      MatI <- round(x$getMatrix()%*%x$getInverse(),digit=0)
-      MatI
-
+      retval=FALSE
+      flag = TRUE
       
+      ## need initial test that matrix MatA and MatB are both 2 dimensions and square
+      ## this is deliberate limitation of function for simplification as all that is required by project
+      
+      if (length(MatA)!=length(MatB) ) {
+            message("ERROR - Matrix's are different sizes")
+            flag <- FALSE
+      } 
+      if ( length(dim(MatA)) != 2  ) {
+            message("ERROR - Matrix A is not 2 dimensional")
+            flag <- FALSE
+      } 
+      if ( length(dim(MatB)) != 2  ) {
+            message("ERROR - Matrix B is not 2 dimensional")
+            flag <- FALSE
+      } 
+      if (dim(MatA)[1]!=dim(MatA)[2]   ) {
+            message("ERROR - Matrix A is not square")
+            flag <- FALSE
+      }
+      if (dim(MatB)[1]!=dim(MatB)[2]   ) {
+            message("ERROR - Matrix B is not square")
+            flag <- FALSE
+      }
+      
+      if (flag) {
+      
+            MatAB <- round(MatA %*% MatB,digit=5)   ##remove decimal rounding issues
+            MatBA <- round(MatB %*% MatA,digit=5)   
+            MatI <- MatAB == MatBA
+            ## check 1, AB==BA
+            if (sum(MatI)==length(MatI)) {
+                  ## check 2 that either MAtAB or MatBA is identity matrix
+                  ## we already know that matrix's are both same dim and square
+                  if (sum(MatAB)==length(MatAB[1,])) {
+                        retval=TRUE
+                  }
+            }
+      } 
+            
+      retval
+}
+
+##  Function to test that object passed is a square matrix and so valid for inversion
+TestMatrix <- function(x) {
+      ##set default return value
+
+      ##Initial test that correctly formated matrix, if not reset x to NULL
+      if (  ( (is.matrix(x)) && (length(dim(x)) == 2) && ( dim(x)[1]==dim(x)[2]) )  ) {
+            retVal <- TRUE
+      }     
+            else (retVal=FALSE)
+      
+      retVal
 }
